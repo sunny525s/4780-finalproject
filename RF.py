@@ -7,21 +7,13 @@ from sklearn.metrics import accuracy_score
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
-# learning rate =0.1??
-# number of estimators =50?
-
 # getting the data
 data = pd.read_csv('RF_train.csv')
-# data = data.set_index("id")
 # getting the target labels (whether the leg is normal (0) or lame (1))
 target = data.loc[:, "RF"]
-# remove labels from the dataset
-cat_features = data.loc[:, ["dob", "forceplate_date",
-                            "gait", "speed", "Gait", "Speed"]]
-encoded_cat_features = pd.get_dummies(cat_features)
-# get the features
-features = pd.concat([data.drop(["id", "RF", "dob", "forceplate_date", "gait", "speed", "Gait", "Speed"], axis=1),
-                     encoded_cat_features], axis=1)
+
+features = data.drop(["id", "RF", "dob", "forceplate_date",
+                     "gait", "speed", "Gait", "Speed"], axis=1)
 
 # split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(
@@ -37,4 +29,11 @@ preds = bst.predict(X_test)
 accuracy = accuracy_score(y_test, preds)
 print("Accuracy:", accuracy)
 
-np.savetxt("RF_test_labels.csv", preds, delimiter=",")
+# load the test data
+test_data = pd.read_csv('RF_test.csv')
+test_features = test_data.drop(
+    ["id", "dob", "forceplate_date", "gait", "speed", "Gait", "Speed"], axis=1)
+test_preds = bst.predict(test_features)
+
+# creating csv file
+np.savetxt("RF_test_labels.csv", test_preds, delimiter=",")
