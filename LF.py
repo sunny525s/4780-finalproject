@@ -4,7 +4,6 @@ import numpy as np
 from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score
 # read data
-from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
 # getting the data
@@ -52,6 +51,9 @@ test_features = test_data.drop(
 #                            encoded_test_cf], axis=1)
 # print(test_features.shape)
 test_preds = bst.predict(test_features)
+final = np.array([id, test_preds])
 
 # creating csv file
-np.savetxt("LF_test_labels.csv", test_preds, delimiter=",")
+# np.savetxt("LF_test_labels.csv", test_preds, header="id,label", delimiter=",")
+df = pd.DataFrame(final, columns=['id', 'LF'])
+df.to_csv('LF_test_labels.csv', index=False)
