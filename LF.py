@@ -27,7 +27,6 @@ features = pd.concat([data.drop(["id", "LF", "dob", "forceplate_date", "gait", "
 X_train, X_test, y_train, y_test = train_test_split(
     features, target, test_size=.2)
 
-print(features[0:10, 0:10])
 # create model instance
 bst = XGBClassifier(n_estimators=50, max_depth=2,
                     learning_rate=0.1, objective='binary:logistic', tree_method="approx", enable_categorical=True)
