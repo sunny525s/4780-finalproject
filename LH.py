@@ -3,45 +3,85 @@ import pandas as pd
 import numpy as np
 from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import KFold
 # read data
-from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-
-# learning rate =0.1??
-# number of estimators =50?
 
 # getting the data
 data = pd.read_csv('LH_train.csv')
-# data = data.set_index("id")
+
+data.fillna(data.median())
 
 # getting the target labels (whether the leg is normal (0) or lame (1))
-target = data.loc[:, "LH"]
-data = data.drop(["id", "LH"], axis=1)
 
+data = data.drop(["id"], axis=1)
+target = data.loc[:, "LH"]
+
+#turn variables into 
 cat_cols = ["dob","forceplate_date", "gait", "speed", "Gait", "Speed"]
 data[cat_cols] = data[cat_cols].astype('category')
 
-# features = data["dob", "forceplate_date", "gait", "speed", "Gait", "Speed"].astype("category")
 
-# print("FEATURES")
-# print(features.loc[0])
+corr_matrix = data.corr()
+
+# choose number of features to select
+n = 10
+features = (corr_matrix.nlargest(n, "LH")["LH"].index).drop("LH")
+
+features = features.union(["weight", "age", "speed"])
+
+data = data[features]
+
+# X_train, X_test, y_train, y_test = train_test_split(
+#     data, target, test_size=.2)
+# # create model instance
+# bst = XGBClassifier(n_estimators=5000, max_depth=2,
+#                     learning_rate=0.05, objective='binary:logistic', tree_method="approx", enable_categorical=True)
+
+# # train model
+# bst.fit(X_train, y_train)
+# # make predictions
+# preds = bst.predict(X_test)
+# accuracy = accuracy_score(y_test, preds)
+# print("Accuracy:", accuracy)
+
+
 
 # split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(
-    data, target, test_size=.2)
+n_splits = 20
+kf = KFold(n_splits=n_splits, shuffle=True)
+best_model = None
+models = []
+best_accuracy = 0
+avg_accuracy = 0
+for train_index, test_index in kf.split(data):
+    X_train, X_test = data.iloc[train_index], data.iloc[test_index]
+    y_train, y_test = target.iloc[train_index], target.iloc[test_index]
 
-# print(X_train.shape)
-# create model instance
-bst = XGBClassifier(n_estimators=5000, max_depth=2,
+    bst = XGBClassifier(n_estimators=5000, max_depth=2,
                     learning_rate=0.05, objective='binary:logistic', tree_method="approx", enable_categorical=True)
-# fit model
-bst.fit(X_train, y_train)
-# make predictions
-preds = bst.predict(X_test)
-accuracy = accuracy_score(y_test, preds)
-print("Accuracy:", accuracy)
+    bst.fit(X_train,y_train)
+    preds = bst.predict(X_test)
+    accuracy = accuracy_score(y_test, preds)
+    if accuracy > best_accuracy:
+        best_model = bst
+        best_accuracy = accuracy
+    print("fold accuracy: " + str(accuracy))
+    avg_accuracy += accuracy
+    models = models + [bst]
+    
+print("Avg accuracy: " + str(avg_accuracy/n_splits))
+print("Accuracy: " + str(best_accuracy))
 
+# predictions = np.zeros((len(data), 2))
+# for model in models:
+#     pred_probs = model.predict_proba(data)
+#     predictions += pred_probs
+# predictions /= len(models)
 
+# y_pred = np.argmax(predictions, axis=1)
+# new_acc = accuracy_score(y_pred, target)
+# print("average over classifiers: " + str(new_acc))
 
 
 
@@ -54,18 +94,23 @@ test_data = test_data.drop(["id"], axis=1)
 cat_cols = ["dob","forceplate_date", "gait", "speed", "Gait", "Speed"]
 test_data[cat_cols] = test_data[cat_cols].astype('category')
 
-# remove labels from the dataset
-# test_cf = data.loc[:, ["dob", "forceplate_date",
-#                        "gait", "speed", "Gait", "Speed"]]
-# encoded_test_cf = pd.get_dummies(test_cf)
-# # get the features
-# test_features = pd.concat([data.drop(["id", "dob", "forceplate_date", "gait", "speed", "Gait", "Speed"], axis=1),
-#                            encoded_test_cf], axis=1)
-# print(test_features.shape)
-test_preds = (bst.predict(test_data)).astype(int)
+test_data = test_data[features]
+
+#test_preds = (bst.predict(test_data)).astype(int)
+
+predictions = np.zeros((len(test_data), 2))
+for model in models:
+    pred_probs = model.predict_proba(test_data)
+    predictions += pred_probs
+predictions /= len(models)
+
+test_preds = np.argmax(predictions, axis=1)
+
+
 final = np.transpose(np.vstack((ids, test_preds)))     
 
+
 # creating csv file
-# np.savetxt("LH_test_labels.csv", test_preds, header="id,label", delimiter=",")
 df = pd.DataFrame(final, columns=['id', 'LH'])
 df.to_csv('LH_test_labels.csv', index=False)
+
