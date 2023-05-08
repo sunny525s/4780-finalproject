@@ -10,7 +10,16 @@ from sklearn.model_selection import train_test_split
 # getting the data
 data = pd.read_csv('LH_train.csv')
 
-data.fillna(data.median())
+# combine both hind leg data, use RH label as LH
+# data2 = pd.read_csv('RH_train.csv')
+
+# data2 = data2.rename(columns={'RH': 'LH'})
+
+# data.fillna(data.median())
+# data2.fillna(data.median())
+
+# frames = [data, data2]
+# data = pd.concat(frames)
 
 # getting the target labels (whether the leg is normal (0) or lame (1))
 
@@ -51,7 +60,7 @@ data = data[features]
 n_splits = 20
 kf = KFold(n_splits=n_splits, shuffle=True)
 best_model = None
-models = []
+models = {}
 best_accuracy = 0
 avg_accuracy = 0
 for train_index, test_index in kf.split(data):
@@ -68,7 +77,7 @@ for train_index, test_index in kf.split(data):
         best_accuracy = accuracy
     print("fold accuracy: " + str(accuracy))
     avg_accuracy += accuracy
-    models = models + [bst]
+    models[bst] = accuracy
     
 print("Avg accuracy: " + str(avg_accuracy/n_splits))
 print("Accuracy: " + str(best_accuracy))
@@ -96,14 +105,17 @@ test_data[cat_cols] = test_data[cat_cols].astype('category')
 
 test_data = test_data[features]
 
-#test_preds = (bst.predict(test_data)).astype(int)
+# test_preds = (best_model.predict(test_data)).astype(int)
+
+
+models = dict(sorted(models.items(), key=lambda x: x[1], reverse=True))
+models = list(models.keys())[:5]
 
 predictions = np.zeros((len(test_data), 2))
 for model in models:
     pred_probs = model.predict_proba(test_data)
     predictions += pred_probs
 predictions /= len(models)
-
 test_preds = np.argmax(predictions, axis=1)
 
 
