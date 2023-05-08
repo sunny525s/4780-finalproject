@@ -26,8 +26,8 @@ data = pd.read_csv('LH_train.csv')
 data = data.drop(["id"], axis=1)
 target = data.loc[:, "LH"]
 
-#turn variables into 
-cat_cols = ["dob","forceplate_date", "gait", "speed", "Gait", "Speed"]
+# turn variables into
+cat_cols = ["dob", "forceplate_date", "gait", "speed", "Gait", "Speed"]
 data[cat_cols] = data[cat_cols].astype('category')
 
 
@@ -55,7 +55,6 @@ data = data[features]
 # print("Accuracy:", accuracy)
 
 
-
 # split data into training and testing sets
 n_splits = 20
 kf = KFold(n_splits=n_splits, shuffle=True)
@@ -67,9 +66,9 @@ for train_index, test_index in kf.split(data):
     X_train, X_test = data.iloc[train_index], data.iloc[test_index]
     y_train, y_test = target.iloc[train_index], target.iloc[test_index]
 
-    bst = XGBClassifier(n_estimators=5000, max_depth=2,
-                    learning_rate=0.05, objective='binary:logistic', tree_method="approx", enable_categorical=True)
-    bst.fit(X_train,y_train)
+    bst = XGBClassifier(n_estimators=60000, max_depth=2,
+                        learning_rate=0.01, objective='binary:logistic', tree_method="approx", enable_categorical=True)
+    bst.fit(X_train, y_train)
     preds = bst.predict(X_test)
     accuracy = accuracy_score(y_test, preds)
     if accuracy > best_accuracy:
@@ -78,7 +77,7 @@ for train_index, test_index in kf.split(data):
     print("fold accuracy: " + str(accuracy))
     avg_accuracy += accuracy
     models[bst] = accuracy
-    
+
 print("Avg accuracy: " + str(avg_accuracy/n_splits))
 print("Accuracy: " + str(best_accuracy))
 
@@ -93,14 +92,12 @@ print("Accuracy: " + str(best_accuracy))
 # print("average over classifiers: " + str(new_acc))
 
 
-
-
 # load the test data
 test_data = pd.read_csv('LH_test.csv')
 ids = (test_data.loc[:, "id"]).to_numpy(np.int32)
 test_data = test_data.drop(["id"], axis=1)
 
-cat_cols = ["dob","forceplate_date", "gait", "speed", "Gait", "Speed"]
+cat_cols = ["dob", "forceplate_date", "gait", "speed", "Gait", "Speed"]
 test_data[cat_cols] = test_data[cat_cols].astype('category')
 
 test_data = test_data[features]
@@ -119,10 +116,9 @@ predictions /= len(models)
 test_preds = np.argmax(predictions, axis=1)
 
 
-final = np.transpose(np.vstack((ids, test_preds)))     
+final = np.transpose(np.vstack((ids, test_preds)))
 
 
 # creating csv file
 df = pd.DataFrame(final, columns=['id', 'LH'])
 df.to_csv('LH_test_labels.csv', index=False)
-
