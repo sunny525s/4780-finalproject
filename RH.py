@@ -9,35 +9,50 @@ from sklearn.model_selection import train_test_split
 
 # getting the data
 data = pd.read_csv('RH_train.csv')
-data2 = pd.read_csv('LH_train.csv')
+# data2 = pd.read_csv('LH_train.csv')
 
-data2 = data2.rename(columns={'LH': 'RH'})
-
+# data2 = data2.rename(columns={'LH': 'RH'})
+# data2 = data2.rename(columns={'V1_RH': 'blabla'})
+# data2 = data2.rename(columns={'V1_LH': 'V1_RH'})
+data['speed'] = data['speed'].apply(
+    lambda x: float(x) if str(x).isnumeric() else 0)
+data['Speed'] = data['Speed'].apply(
+    lambda x: float(x) if str(x).isnumeric() else 0)
 data.fillna(data.median())
 print(data.shape)
-data2.fillna(data.median())
-print(data2.shape)
+# data2.fillna(data.median())
+# print(data2.shape)
 
-frames = [data, data2]
-data = pd.concat(frames)
-print(data.shape)
+# frames = [data, data2]
+# data = pd.concat(frames)
+# print(data.shape)
+# print(data)
 
 
 # getting the target labels (whether the leg is normal (0) or lame (1))
-data = data.drop(["id"], axis=1)
+data = data.drop(["id", "dob", "forceplate_date", "gait", "Gait"], axis=1)
 target = data.loc[:, "RH"]
 
-# turn variables into
-cat_cols = ["dob", "forceplate_date", "gait", "speed", "Gait", "Speed"]
-data[cat_cols] = data[cat_cols].astype('category')
+num_cols = ["age", "speed"]
+# cat_cols = ["gait", "Gait"]
 
+data[num_cols] = data[num_cols].astype('float64')
+# data[cat_cols] = []
+
+# turn variables into
+# cat_cols = ["dob", "forceplate_date", "gait", "speed", "Gait", "Speed"]
+# data[cat_cols] = data[cat_cols].astype('category')
+# cat_cols = ["gait", "Gait"]
+# data[cat_cols] = data[cat_cols].astype('category')
+# print(cat_cols)
 
 corr_matrix = data.corr()
 
-# choose number of features to select
-n = 15
+# # choose number of features to select
+n = 40
 features = (corr_matrix.nlargest(n, "RH")["RH"].index).drop("RH")
 
+# features = (["RH"].index).drop("RH")
 
 features = features.union(["weight", "age", "speed"])
 
@@ -67,9 +82,9 @@ avg_accuracy = 0
 for train_index, test_index in kf.split(data):
     X_train, X_test = data.iloc[train_index], data.iloc[test_index]
     y_train, y_test = target.iloc[train_index], target.iloc[test_index]
+    print(X_train)
 
-    bst = XGBClassifier(n_estimators=50000, max_depth=2,
-                        learning_rate=0.05, objective='binary:logistic', tree_method="approx", enable_categorical=True)
+    bst = XGBClassifier(n_estimators=100, learning_rate=0.3)
     bst.fit(X_train, y_train)
     preds = bst.predict(X_test)
     accuracy = accuracy_score(y_test, preds)
@@ -97,17 +112,25 @@ print("Accuracy: " + str(best_accuracy))
 # load the test data
 test_data = pd.read_csv('RH_test.csv')
 ids = (test_data.loc[:, "id"]).to_numpy(np.int32)
-test_data = test_data.drop(["id"], axis=1)
+test_data = test_data.drop(["id", "gait", "Gait"], axis=1)
 
-cat_cols = ["dob", "forceplate_date", "gait", "speed", "Gait", "Speed"]
-test_data[cat_cols] = test_data[cat_cols].astype('category')
+test_data.fillna(test_data.median())
+
+test_data['speed'] = test_data['speed'].apply(
+    lambda x: float(x) if str(x).isnumeric() else 0)
+# data['Speed'] = data['Speed'].apply(
+#     lambda x: float(x) if str(x).isnumeric() else 0)
+
+cat_cols = ["speed", "age"]
+test_data[cat_cols] = test_data[cat_cols].astype('float64')
 
 test_data = test_data[features]
 
-#test_preds = (bst.predict(test_data)).astype(int)
+# test_preds = (bst.predict(test_data)).astype(int)
 
 models = dict(sorted(models.items(), key=lambda x: x[1], reverse=True))
 models = list(models.keys())[:5]
+
 
 predictions = np.zeros((len(test_data), 2))
 for model in models:

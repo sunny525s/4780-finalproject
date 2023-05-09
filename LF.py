@@ -66,8 +66,8 @@ for train_index, test_index in kf.split(data):
     X_train, X_test = data.iloc[train_index], data.iloc[test_index]
     y_train, y_test = target.iloc[train_index], target.iloc[test_index]
 
-    bst = XGBClassifier(n_estimators=50000, max_depth=2,
-                        learning_rate=0.05, objective='binary:logistic', tree_method="approx", enable_categorical=True)
+    bst = XGBClassifier(n_estimators=100, max_depth=2,
+                        learning_rate=0.3, objective='binary:logistic', tree_method="approx", enable_categorical=True)
     bst.fit(X_train, y_train)
     preds = bst.predict(X_test)
     accuracy = accuracy_score(y_test, preds)
