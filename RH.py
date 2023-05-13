@@ -9,13 +9,21 @@ from sklearn.model_selection import train_test_split
 
 # getting the data
 data = pd.read_csv('RH_train.csv')
-# data = data.set_index("id")
+data.fillna(data.median())
+# # data = data.set_index("id")
+# data2 = pd.read_csv('LH_train.csv')
+# data2.fillna(data.median())
+# # data = data.set_index("id")
+# frames = [data, data2]
+# data = pd.concat(frames)
 
 # getting the target labels (whether the leg is normal (0) or lame (1))
 target = data.loc[:, "RH"]
-data = data.drop(["id", "RH"], axis=1)
+data = data.drop(
+    ["id", "RH"], axis=1)
 
-cat_cols = ["dob","forceplate_date", "gait", "speed", "Gait", "Speed"]
+cat_cols = ["speed", "Speed", "weight", "age",
+            "gait", "Gait", "dob", "forceplate_date"]
 data[cat_cols] = data[cat_cols].astype('category')
 
 # features = data["dob", "forceplate_date", "gait", "speed", "Gait", "Speed"].astype("category")
@@ -29,8 +37,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 # print(X_train.shape)
 # create model instance
-bst = XGBClassifier(n_estimators=5000, max_depth=2,
-                    learning_rate=0.05, objective='binary:logistic', tree_method="approx", enable_categorical=True)
+bst = XGBClassifier(n_estimators=100, max_depth=3,
+                    learning_rate=0.2, objective='binary:logistic', tree_method="approx", enable_categorical=True)
 # fit model
 bst.fit(X_train, y_train)
 # make predictions
@@ -39,16 +47,14 @@ accuracy = accuracy_score(y_test, preds)
 print("Accuracy:", accuracy)
 
 
-
-
-
-
 # load the test data
 test_data = pd.read_csv('RH_test.csv')
 ids = (test_data.loc[:, "id"]).to_numpy(np.int32)
-test_data = test_data.drop(["id"], axis=1)
+test_data = test_data.drop(
+    ["id"], axis=1)
 
-cat_cols = ["dob","forceplate_date", "gait", "speed", "Gait", "Speed"]
+cat_cols = ["speed", "Speed", "weight", "age",
+            "gait", "Gait", "dob", "forceplate_date"]
 test_data[cat_cols] = test_data[cat_cols].astype('category')
 # remove labels from the dataset
 # test_cf = data.loc[:, ["dob", "forceplate_date",
@@ -59,7 +65,7 @@ test_data[cat_cols] = test_data[cat_cols].astype('category')
 #                            encoded_test_cf], axis=1)
 # print(test_features.shape)
 test_preds = (bst.predict(test_data)).astype(int)
-final = np.transpose(np.vstack((ids, test_preds)))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+final = np.transpose(np.vstack((ids, test_preds)))
 
 # creating csv file
 # np.savetxt("RH_test_labels.csv", test_preds, header="id,label", delimiter=",")
